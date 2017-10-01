@@ -6,24 +6,55 @@ class Item {
   }
 }
 
-const isConjured = function(item) {
+const itemRules = (item, rules) => {
+  return rules.filter(rule => rule.item(item))[0].rules
+}
+
+const itemRule = (item, rules) => {
+  return rules.filter(rule => {
+    if (!rule.predicate) return true
+
+    return rule.predicate(item)
+  })[0]
+}
+
+const isBasic = item => {
+  return !isConjured(item) &&
+    !isBackstagePasses(item) &&
+    !isLegendary(item) &&
+    !isAgedBrie(item)
+}
+
+const isConjured = item => {
   return item.name.match(/^Conjured/)
 }
 
-const isBackstagePasses = function(item) {
+const isBackstagePasses = item => {
   return item.name.match(/^Backstage passes/)
 }
 
-const isLegendary = function(item) {
+const isLegendary = item => {
   return item.name.match(/^Sulfuras/)
 }
 
-const isAgedBrie = function (item) {
+const isAgedBrie = item => {
   return item.name.match(/^Aged Brie/)
 }
 
-const isExpired = function(item) {
+const isExpired = item => {
   return item.sellIn <= 0
+}
+
+const backstagePassesPredicates = {
+  isLimited: item => item.sellIn > 0 && item.sellIn <= 3,
+  isFresh: item => {
+    if (backstagePassesPredicates.isLimited(item)) return false
+
+    return item.sellIn > 0 && item.sellIn <= 10
+  },
+  isEarlyBird: item => {
+    return item.sellIn > 10
+  },
 }
 
 const update = (item, options) => {
@@ -47,54 +78,128 @@ const attributeDelta = (attribute, value, item) => {
   return value
 }
 
+const rules = [
+  {
+    item: isBasic,
+    rules: [
+      {
+        predicate: item => !isExpired(item),
+        deltas: {
+          quality: -1,
+          sellIn: -1,
+        },
+      },
+      {
+        predicate: isExpired,
+        deltas: {
+          quality: -2,
+          sellIn: -1,
+        }
+      },
+    ],
+  },
+  {
+    item: isAgedBrie,
+    rules: [
+      {
+        predicate: item => !isExpired(item),
+        deltas: {
+          quality: 1,
+          sellIn: -1,
+        },
+      },
+      {
+        predicate: isExpired,
+        deltas: {
+          quality: 2,
+          sellIn: -1,
+        },
+      },
+    ]
+  },
+  {
+    item: isLegendary,
+    rules: [
+      {
+        deltas: {
+          quality: 0,
+          sellIn: 0,
+        },
+      }
+    ]
+  },
+  {
+    item: isConjured,
+    rules: [
+      {
+        predicate: item => !isExpired(item),
+        deltas: {
+          quality: -2,
+          sellIn: -1,
+        },
+      },
+      {
+        predicate: isExpired,
+        deltas: {
+          quality: -4,
+          sellIn: -1,
+        }
+      },
+    ]
+  },
+  {
+    item: isBackstagePasses,
+    rules: [
+      {
+        predicate: isExpired,
+        deltas: {
+          quality: item => item.quality * -1,
+          sellIn: -1,
+        },
+      },
+      {
+        predicate: backstagePassesPredicates.isLimited,
+        deltas: {
+          quality: 3,
+          sellIn: -1,
+        }
+      },
+      {
+        predicate: backstagePassesPredicates.isFresh,
+        deltas: {
+          quality: 2,
+          sellIn: -1,
+        }
+      },
+      {
+        predicate: backstagePassesPredicates.isEarlyBird,
+        deltas: {
+          quality: 1,
+          sellIn: -1,
+        }
+      },
+    ]
+  },
+]
+
 class Shop {
   constructor(items=[]){
     this.items = items;
   }
   updateQuality() {
     return this.items.map(item => {
-      if (isConjured(item)) {
-        const options = {
-          quality: isExpired(item) ? -4 : -2,
-          sellIn: -1,
-        }
+      const currentItemRules = itemRules(item, rules)
+      const currentRule = itemRule(item, currentItemRules)
 
-        return update(item, options)
-      }
+      let quality = currentRule.deltas.quality
 
-      if (isAgedBrie(item)) {
-        const options = {
-          quality : isExpired(item) ? 2 : 1,
-          sellIn : -1,
-        }
-
-        return update(item, options)
-      }
-
-      if (isLegendary(item)) { return item }
-
-      if (isBackstagePasses(item)) {
-        let qualityDelta
-
-        if (item.sellIn <= 0) {
-          qualityDelta = -item.quality
-        } else if (item.sellIn <= 3) {
-          qualityDelta = 3
-        } else if (item.sellIn <= 10) {
-          qualityDelta = 2
-        } else {
-          qualityDelta = 1
-        }
-
-        return update(item, {
-          sellIn: -1,
-          quality: qualityDelta,
-        })
+      if (typeof quality == 'function') {
+        quality = currentRule.deltas.quality(item)
       }
 
       const options = {
-        quality: isExpired(item) ? -2 : -1,
-        sellIn: -1,
+        quality: quality,
+        sellIn: currentRule.deltas.sellIn,
       }
 
       return update(item, options)
