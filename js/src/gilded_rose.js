@@ -1,7 +1,7 @@
 // Each rule should be exclusive, so we pick the first matching one.
-const itemRules = (item, rules) => {
-  return rules.filter(rule => rule.item(item))[0].rules
-}
+const itemRules = (item, rules) => (
+  rules.filter(rule => rule.item(item))[0].rules
+)
 
 const itemRule = (item, rules) => {
   return rules.filter(rule => {
@@ -12,6 +12,10 @@ const itemRule = (item, rules) => {
 }
 
 // Items rules
+const isConjured = item => item.name.match(/^Conjured/)
+const isBackstagePasses = item => item.name.match(/^Backstage passes/)
+const isLegendary = item => item.name.match(/^Sulfuras/)
+const isAgedBrie = item => item.name.match(/^Aged Brie/)
 const isBasic = item => {
   return !isConjured(item) &&
     !isBackstagePasses(item) &&
@@ -19,51 +23,28 @@ const isBasic = item => {
     !isAgedBrie(item)
 }
 
-const isConjured = item => {
-  return item.name.match(/^Conjured/)
-}
-
-const isBackstagePasses = item => {
-  return item.name.match(/^Backstage passes/)
-}
-
-const isLegendary = item => {
-  return item.name.match(/^Sulfuras/)
-}
-
-const isAgedBrie = item => {
-  return item.name.match(/^Aged Brie/)
-}
-
 // Items rules predicates
-const isExpired = item => {
-  return item.sellIn <= 0
-}
-
+const isExpired = item => item.sellIn <= 0
 const backstagePassesPredicates = {
+  isEarlyBird: item => item.sellIn > 10,
   isLimited: item => item.sellIn > 0 && item.sellIn <= 3,
   isFresh: item => {
     if (backstagePassesPredicates.isLimited(item)) return false
 
     return item.sellIn > 0 && item.sellIn <= 10
   },
-  isEarlyBird: item => {
-    return item.sellIn > 10
-  },
 }
 
 // Updates methods
+const updateSellIn = sellIn => item => (item.sellIn += sellIn, item)
 const canUpdateQuality = currentQuality => (
   currentQuality > 0 && currentQuality < 50
 )
-
 const updateQuality = quality => item => {
   if (!canUpdateQuality(item.quality)) return item
 
   return (item.quality += quality, item)
 }
-
-const updateSellIn = sellIn => item => (item.sellIn += sellIn, item)
 
 // Update strategy
 const _pipe = (f, g) => (...args) => g(f(...args))
