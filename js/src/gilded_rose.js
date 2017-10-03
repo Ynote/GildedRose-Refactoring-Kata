@@ -49,14 +49,7 @@ const updateQuality = quality => item => {
 // Update strategy
 const _pipe = (f, g) => (...args) => g(f(...args))
 const pipe = (...fns) => fns.reduce(_pipe)
-
-const update = options => item => {
-  const attributes = Object.keys(options)
-  const updates = attributes.map(attribute => options[attribute])
-  const updateAttributes = pipe.apply(this, updates)
-
-  return updateAttributes(item)
-}
+const update = options => item => pipe.apply(this,options)(item)
 
 const rules = [
   {
@@ -64,17 +57,17 @@ const rules = [
     rules: [
       {
         predicate: item => !isExpired(item),
-        updates: {
-          quality: updateQuality(-1),
-          sellIn: updateSellIn(-1),
-        },
+        updates: [
+          updateQuality(-1),
+          updateSellIn(-1),
+        ],
       },
       {
         predicate: isExpired,
-        updates: {
-          quality: updateQuality(-2),
-          sellIn: updateSellIn(-1),
-        }
+        updates: [
+          updateQuality(-2),
+          updateSellIn(-1),
+        ],
       },
     ],
   },
@@ -83,17 +76,17 @@ const rules = [
     rules: [
       {
         predicate: item => !isExpired(item),
-        updates: {
-          quality: updateQuality(1),
-          sellIn: updateSellIn(-1),
-        },
+        updates: [
+          updateQuality(1),
+          updateSellIn(-1),
+        ],
       },
       {
         predicate: isExpired,
-        updates: {
-          quality: updateQuality(2),
-          sellIn: updateSellIn(-1),
-        },
+        updates: [
+          updateQuality(2),
+          updateSellIn(-1),
+        ],
       },
     ]
   },
@@ -101,10 +94,10 @@ const rules = [
     item: isLegendary,
     rules: [
       {
-        updates: {
-          quality: updateQuality(0),
-          sellIn: updateQuality(0),
-        },
+        updates: [
+          updateQuality(0),
+          updateQuality(0),
+        ],
       }
     ]
   },
@@ -113,17 +106,17 @@ const rules = [
     rules: [
       {
         predicate: item => !isExpired(item),
-        updates: {
-          quality: updateQuality(-2),
-          sellIn: updateSellIn(-1),
-        },
+        updates: [
+          updateQuality(-2),
+          updateSellIn(-1),
+        ],
       },
       {
         predicate: isExpired,
-        updates: {
-          quality: updateQuality(-4),
-          sellIn: updateSellIn(-1),
-        }
+        updates: [
+          updateQuality(-4),
+          updateSellIn(-1),
+        ],
       },
     ]
   },
@@ -132,31 +125,31 @@ const rules = [
     rules: [
       {
         predicate: isExpired,
-        updates: {
-          quality: item => (item.quality = 0, item),
-          sellIn: updateSellIn(-1),
-        },
+        updates: [
+          item => (item.quality = 0, item),
+          updateSellIn(-1),
+        ],
       },
       {
         predicate: backstagePassesPredicates.isLimited,
-        updates: {
-          quality: updateQuality(3),
-          sellIn: updateSellIn(-1),
-        }
+        updates: [
+          updateQuality(3),
+          updateSellIn(-1),
+        ],
       },
       {
         predicate: backstagePassesPredicates.isFresh,
-        updates: {
-          quality: updateQuality(2),
-          sellIn: updateSellIn(-1),
-        }
+        updates: [
+          updateQuality(2),
+          updateSellIn(-1),
+        ],
       },
       {
         predicate: backstagePassesPredicates.isEarlyBird,
-        updates: {
-          quality: updateQuality(1),
-          sellIn: updateSellIn(-1),
-        }
+        updates: [
+          updateQuality(1),
+          updateSellIn(-1),
+        ],
       },
     ]
   },
